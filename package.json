@@ -1,212 +1,221 @@
 {
-  "name": "flutter-plus",
-  "displayName": "Flutter Plus",
-  "description": "Extension with various improvements for Flutter",
-  "icon": "assets/logo.png",
-  "version": "0.6.1",
-  "pricing": "Free",
-  "engines": {
-    "vscode": "^1.92.0"
-  },
-  "extensionKind": [
-    "workspace"
-  ],
-  "capabilities": {
-    "virtualWorkspaces": {
-      "supported": "limited",
-      "description": "Some functionality may be limited for remote files in virtual workspaces."
-    },
-    "untrustedWorkspaces": {
-      "supported": false
-    }
-  },
-  "license": "SEE LICENSE IN LICENSE",
-  "publisher": "plugfox",
-  "bugs": {
-    "url": "https://github.com/PlugFox/flutter-plus/issues",
-    "email": "plugfox@gmail.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/PlugFox/flutter-plus"
-  },
-  "homepage": "https://github.com/PlugFox/flutter-plus",
-  "categories": [
-    "Snippets",
-    "Programming Languages"
-  ],
-  "keywords": [
-    "Programming Languages",
-    "Snippets",
-    "Linters",
-    "Formatters",
-    "Debuggers",
-    "Dart",
-    "Flutter",
-    "Actions",
-    "Shortcuts"
-  ],
-  "activationEvents": [
-    "onLanguage:dart",
-    "workspaceContains:pubspec.yaml",
-    "workspaceContains:*/pubspec.yaml",
-    "workspaceContains:*/*/pubspec.yaml",
-    "workspaceContains:*.dart",
-    "workspaceContains:*/*.dart",
-    "workspaceContains:*/*/*.dart",
-    "onCommand:flutter.createProject",
-    "onCommand:dart.createProject",
-    "onUri"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "flutter-plus.sealed-states",
-        "title": "Create Sealed States",
-        "category": "Flutter Plus"
-      }
-    ],
-    "views": {
-      "flutter": [
-        {
-          "id": "flutter-plus.sidebar-actions",
-          "name": "Actions",
-          "when": "dart-code:anyFlutterProjectLoaded"
-        }
-      ]
-    },
-    "submenus": [
-      {
-        "id": "flutter-plus.submenu",
-        "label": "Flutter Plus",
-        "icon": "assets/logo.png"
-      }
-    ],
-    "menus": {
-      "editor/context": [
-        {
-          "when": "editorLangId == dart",
-          "submenu": "flutter-plus.submenu",
-          "group": "flutter-plus"
-        }
-      ],
-      "flutter-plus.submenu": [
-        {
-          "when": "editorLangId == dart",
-          "command": "flutter-plus.sealed-states"
-        }
-      ],
-      "commandPalette": []
-    },
-    "snippets": [
-      {
-        "language": "markdown",
-        "path": "./snippets/markdown.json"
+   "name": "flutter-plus",
+   "displayName": "Flutter Plus",
+   "description": "Extension with various improvements for Flutter",
+   "icon": "assets/logo.png",
+   "version": "0.6.2",
+   "pricing": "Free",
+   "engines": {
+      "vscode": "^1.96.0"
+   },
+   "extensionKind": [
+      "workspace"
+   ],
+   "capabilities": {
+      "virtualWorkspaces": {
+         "supported": "limited",
+         "description": "Some functionality may be limited for remote files in virtual workspaces."
       },
-      {
-        "language": "dart",
-        "path": "./snippets/dart.json"
+      "untrustedWorkspaces": {
+         "supported": false
+      }
+   },
+   "license": "SEE LICENSE IN LICENSE",
+   "publisher": "plugfox",
+   "bugs": {
+      "url": "https://github.com/PlugFox/flutter-plus/issues",
+      "email": "plugfox@gmail.com"
+   },
+   "repository": {
+      "type": "git",
+      "url": "https://github.com/PlugFox/flutter-plus"
+   },
+   "homepage": "https://github.com/PlugFox/flutter-plus",
+   "categories": [
+      "Snippets",
+      "Programming Languages"
+   ],
+   "keywords": [
+      "Programming Languages",
+      "Snippets",
+      "Linters",
+      "Formatters",
+      "Debuggers",
+      "Dart",
+      "Flutter",
+      "Actions",
+      "Shortcuts"
+   ],
+   "activationEvents": [
+      "onLanguage:dart",
+      "workspaceContains:pubspec.yaml",
+      "workspaceContains:*/pubspec.yaml",
+      "workspaceContains:*/*/pubspec.yaml",
+      "workspaceContains:*.dart",
+      "workspaceContains:*/*.dart",
+      "workspaceContains:*/*/*.dart",
+      "onCommand:flutter.createProject",
+      "onCommand:dart.createProject",
+      "onUri"
+   ],
+   "main": "./dist/extension.js",
+   "contributes": {
+      "commands": [
+         {
+            "command": "flutter-plus.sealed-states",
+            "title": "Create Sealed States",
+            "category": "Flutter Plus"
+         },
+         {
+            "command": "flutter-plus.data",
+            "title": "Create Data class",
+            "category": "Flutter Plus"
+         }
+      ],
+      "views": {
+         "flutter": [
+            {
+               "id": "flutter-plus.sidebar-actions",
+               "name": "Actions",
+               "when": "dart-code:anyFlutterProjectLoaded"
+            }
+         ]
       },
-      {
-        "language": "dart",
-        "path": "./snippets/flutter.json"
-      }
-    ],
-    "configuration": {
-      "title": "Wraps",
-      "properties": {
-        "flutter-plus.wraps": {
-          "description": "Set up custom Wrap With here",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Name of the Widget"
-              },
-              "body": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Body of the Widget, use $ for cursor position and ${widget} for selected text"
-              }
+      "submenus": [
+         {
+            "id": "flutter-plus.submenu",
+            "label": "Flutter Plus",
+            "icon": "assets/logo.png"
+         }
+      ],
+      "menus": {
+         "editor/context": [
+            {
+               "when": "editorLangId == dart",
+               "submenu": "flutter-plus.submenu",
+               "group": "flutter-plus"
             }
-          },
-          "default": [
+         ],
+         "flutter-plus.submenu": [
             {
-              "name": "ListenableBuilder",
-              "body": [
-                "ListenableBuilder(",
-                "  listenable: ${1:listenable},",
-                "  builder: (context, _) => ${widget},",
-                ")"
-              ]
+               "when": "editorLangId == dart",
+               "command": "flutter-plus.sealed-states"
             },
             {
-              "name": "ValueListenableBuilder",
-              "body": [
-                "ValueListenableBuilder(",
-                "  valueListenable: ${1:valueListenable},",
-                "  builder: (context, value, _) => ${widget},",
-                ")"
-              ]
-            },
-            {
-              "name": "RepaintBoundary",
-              "body": [
-                "RepaintBoundary(",
-                "  child: ${widget},",
-                ")"
-              ]
-            },
-            {
-              "name": "SliverPadding",
-              "body": [
-                "SliverPadding(",
-                "  padding: const EdgeInsets.all(${1:8.0}),",
-                "  sliver: ${widget},",
-                ")"
-              ]
+               "when": "editorLangId == dart",
+               "command": "flutter-plus.data"
             }
-          ]
-        }
+         ],
+         "commandPalette": []
+      },
+      "snippets": [
+         {
+            "language": "markdown",
+            "path": "./snippets/markdown.json"
+         },
+         {
+            "language": "dart",
+            "path": "./snippets/dart.json"
+         },
+         {
+            "language": "dart",
+            "path": "./snippets/flutter.json"
+         }
+      ],
+      "configuration": {
+         "title": "Wraps",
+         "properties": {
+            "flutter-plus.wraps": {
+               "description": "Set up custom Wrap With here",
+               "type": "array",
+               "items": {
+                  "type": "object",
+                  "properties": {
+                     "name": {
+                        "type": "string",
+                        "description": "Name of the Widget"
+                     },
+                     "body": {
+                        "type": "array",
+                        "items": {
+                           "type": "string"
+                        },
+                        "description": "Body of the Widget, use $ for cursor position and ${widget} for selected text"
+                     }
+                  }
+               },
+               "default": [
+                  {
+                     "name": "ListenableBuilder",
+                     "body": [
+                        "ListenableBuilder(",
+                        "  listenable: ${1:listenable},",
+                        "  builder: (context, _) => ${widget},",
+                        ")"
+                     ]
+                  },
+                  {
+                     "name": "ValueListenableBuilder",
+                     "body": [
+                        "ValueListenableBuilder(",
+                        "  valueListenable: ${1:valueListenable},",
+                        "  builder: (context, value, _) => ${widget},",
+                        ")"
+                     ]
+                  },
+                  {
+                     "name": "RepaintBoundary",
+                     "body": [
+                        "RepaintBoundary(",
+                        "  child: ${widget},",
+                        ")"
+                     ]
+                  },
+                  {
+                     "name": "SliverPadding",
+                     "body": [
+                        "SliverPadding(",
+                        "  padding: const EdgeInsets.all(${1:8.0}),",
+                        "  sliver: ${widget},",
+                        ")"
+                     ]
+                  }
+               ]
+            }
+         }
       }
-    }
-  },
-  "extensionDependencies": [
-    "Dart-Code.dart-code",
-    "Dart-Code.flutter"
-  ],
-  "scripts": {
-    "compile": "npm run check-types && npm run lint && node esbuild.js",
-    "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "npm run check-types && npm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "vscode:prepublish": "npm run package",
-    "deploy": "vsce publish"
-  },
-  "devDependencies": {
-    "@vscode/vsce": "^3.0.0",
-    "@types/vscode": "^1.92.0",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^7.14.1",
-    "@typescript-eslint/parser": "^7.11.0",
-    "eslint": "^8.57.0",
-    "esbuild": "^0.21.5",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.4.5",
-    "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.4.0"
-  }
+   },
+   "extensionDependencies": [
+      "Dart-Code.dart-code",
+      "Dart-Code.flutter"
+   ],
+   "scripts": {
+      "compile": "npm run check-types && npm run lint && node esbuild.js",
+      "watch": "npm-run-all -p watch:*",
+      "watch:esbuild": "node esbuild.js --watch",
+      "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+      "package": "npm run check-types && npm run lint && node esbuild.js --production",
+      "compile-tests": "tsc -p . --outDir out",
+      "watch-tests": "tsc -p . -w --outDir out",
+      "pretest": "npm run compile-tests && npm run compile && npm run lint",
+      "check-types": "tsc --noEmit",
+      "lint": "eslint src --ext ts",
+      "test": "vscode-test",
+      "vscode:prepublish": "npm run package",
+      "deploy": "vsce publish"
+   },
+   "devDependencies": {
+      "@types/mocha": "^10.0.7",
+      "@types/node": "20.x",
+      "@types/vscode": "^1.96.0",
+      "@typescript-eslint/eslint-plugin": "^7.14.1",
+      "@typescript-eslint/parser": "^7.11.0",
+      "@vscode/test-cli": "^0.0.9",
+      "@vscode/test-electron": "^2.4.0",
+      "@vscode/vsce": "^3.0.0",
+      "esbuild": "^0.21.5",
+      "eslint": "^8.57.0",
+      "npm-run-all": "^4.1.5",
+      "typescript": "^5.4.5"
+   }
 }
