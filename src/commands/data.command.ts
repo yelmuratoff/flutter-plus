@@ -109,25 +109,26 @@ export const dataClass = async () => {
 
   // Generate factory methods for converting from Map and JSON
   const generateFactoryMethods = () => `
-  factory ${dtoClassName}.fromMap(Map<String, dynamic> map) => ${dtoClassName}(
+  factory ${dtoClassName}.fromMap(Map<String, dynamic> map,
+   ) => ${dtoClassName}(
     ${fields
       .map(
-        ({ type, name, snakeName, nullable }) => `
-      ${name}: map['${snakeName}'] as ${type.replace("?", "")}${
-          nullable ? "?" : ""
-        },
-    `
+        ({ type, name, snakeName, nullable }) =>
+          `${name}: map['${snakeName}'] as ${type.replace("?", "")}${
+            nullable ? "?" : ""
+          },`
       )
       .join("")}
   );
 
   factory ${dtoClassName}.fromJson(String source) =>
-      ${dtoClassName}.fromMap(json.decode(source) as Map<String, dynamic>);
-  `;
+      ${dtoClassName}.fromMap(
+         json.decode(source) as Map<String, dynamic>,
+      );
+   `;
 
   // Generate a copyWith method to create modified copies of an instance
-  const generateCopyWith = () => `
-  ${dtoClassName} copyWith({
+  const generateCopyWith = () => `${dtoClassName} copyWith({
     ${fields
       .map(
         ({ type, name }) => `${type.endsWith("?") ? type : `${type}?`} ${name},`
@@ -137,8 +138,13 @@ export const dataClass = async () => {
     ${fields
       .map(({ name }) => `${name}: ${name} ?? this.${name},`)
       .join("\n    ")}
-  );
-  `;
+  );`;
+
+  const generateToString = () => `@override
+  String toString() => '${dtoClassName}(${fields
+    .map(({ name }) => `${name}: \$${name}`)
+    .join(", ")})';
+`;
 
   // Generate methods for converting to Map and JSON
   const generateToMapAndJson = () => `
@@ -148,7 +154,7 @@ export const dataClass = async () => {
       .join("\n    ")}
   };
 
-  String toJson() => json.encode(toMap());
+  String toJson() => json.encode(toMap(),);
   `;
 
   // Generate equality checks and hashCode methods
@@ -183,20 +189,11 @@ ${
 @immutable
 class ${dtoClassName} ${hasEquatable ? "extends Equatable" : ""} {
 ${generateFieldDeclarations()}
-
 ${generateConstructor()}
-
 ${generateFactoryMethods()}
-
 ${generateCopyWith()}
-
 ${generateToMapAndJson()}
-
-  @override
-  String toString() => '${dtoClassName}(${fields
-    .map(({ name }) => "${name}: $${name}")
-    .join(", ")})';
-
+${generateToString()}
 ${generateEquality()}
 }
 `;
