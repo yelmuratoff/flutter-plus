@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 
+enum Count { one, two, three }
+
+class SubType {
+  final String name;
+  final Count count;
+
+  SubType(this.name, this.count);
+}
+
 void main() {
   runApp(const MainApp());
 }

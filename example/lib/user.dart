@@ -1,46 +1,35 @@
 import 'dart:convert';
+import 'package:example/main.dart';
 import 'package:meta/meta.dart';
 
 @immutable
-class UserDTO  {
+class User {
   final String name;
+  final Count count;
+  final SubType subType;
 
-  const UserDTO({
+  const User({
     required this.name,
+    required this.count,
+    required this.subType,
   });
-  
 
-  factory UserDTO.fromMap(Map<String, dynamic> map,
-   ) => UserDTO(
-    name: map['name'] as String,
-  );
-
-  factory UserDTO.fromJson(String source) =>
-      UserDTO.fromMap(
-         json.decode(source) as Map<String, dynamic>,
+  factory User.fromMap(Map<String, dynamic> map) => User(
+        name: map['name'],
+        count: map['count'] != null ? Count.fromMap(map['count']) : null,
+        subType: map['subType'] != null ? SubType.fromMap(map['subType']) : null,
       );
-UserDTO copyWith({
-    String? name,
-  }) => UserDTO(
-    name: name ?? this.name,
-  );
+
+  factory User.fromJson(String source) => User.fromMap(json.decode(source));
 
   Map<String, dynamic> toMap() => {
-      'name': name,
-  };
+        'name': name,
+        'count': count.toMap(),
+        'subType': subType.toMap(),
+      };
 
-  String toJson() => json.encode(toMap(),);
-@override
-  String toString() => 'UserDTO(name: $name)';
-
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is UserDTO &&
-      other.name == name && true;
+  String toJson() => json.encode(toMap());
 
   @override
-  int get hashCode => name.hashCode ^ 0;
-  
+  String toString() => 'User(name: $name, count: $count, subType: $subType)';
 }
