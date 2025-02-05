@@ -46,7 +46,6 @@ export const dataClass = async () => {
 
   const classRegex = /class\s+(\w+)\s*{([\s\S]*?)}/g;
   let classMatch;
-  let updatedClassCode = classCode;
   let edits: { range: vscode.Range; newText: string }[] = [];
 
   while ((classMatch = classRegex.exec(classCode)) !== null) {
@@ -66,83 +65,88 @@ export const dataClass = async () => {
       "dynamic",
     ]);
 
-    const determineFieldType = (
-      type: string,
-      name: string,
-      classBody: string
-    ) => {
-      const cleanType = type.replace("?", "");
-      let isEnum = false;
-      let customParsing: { fromJson?: string; toJson?: string } = {};
+    interface Field {
+      type: string;
+      name: string;
+      snakeName: string;
+      nullable: boolean;
+      isEnum: boolean;
+      isClass: boolean;
+      customParsing: { fromJson?: string; toJson?: string };
+    }
+    const fields: Field[] = [];
+    const lines = classBody.split("\n");
 
-      const commentRegex = new RegExp(`${name};\\s*//\\s*(.+)`, "g");
-      const commentMatch = commentRegex.exec(classBody);
+    // Проходим по каждой строке, чтобы найти объявление поля и его комментарии
+    for (let i = 0; i < lines.length; i++) {
+      const trimmedLine = lines[i].trim();
+      const fieldMatch = trimmedLine.match(/^final\s+(\w+\??)\s+(\w+);/);
+      if (fieldMatch) {
+        const type = fieldMatch[1];
+        const name = fieldMatch[2];
+        const nullable = type.endsWith("?");
+        let isEnum = false;
+        let isClass = !dartBuiltInTypes.has(type.replace("?", ""));
+        let customParsing: { fromJson?: string; toJson?: string } = {};
 
-      if (commentMatch) {
-        const commentLines = commentMatch[1]
-          .split("\n")
-          .map((line) => line.trim());
-        for (const line of commentLines) {
-          if (line.startsWith("Type: enum")) {
-            isEnum = true;
-          } else if (line.startsWith("Parsing:")) {
-            const match = line.match(/Parsing:\s*(.*),\s*(.*)/);
-            if (match) {
-              customParsing.fromJson = match[1].trim();
-              customParsing.toJson = match[2].trim();
-            }
-          }
+        // Собираем блок комментариев, который находится непосредственно над объявлением поля
+        let commentBlock = "";
+        let j = i - 1;
+        while (j >= 0 && lines[j].trim().startsWith("//")) {
+          // Убираем префикс "//" и добавляем строку в блок комментариев
+          commentBlock =
+            lines[j].trim().replace(/^\/\//, "").trim() + "\n" + commentBlock;
+          j--;
         }
+
+        // Если в комментариях указано, что тип - enum, то это enum
+        if (commentBlock.includes("Type: enum")) {
+          isEnum = true;
+          isClass = false;
+        }
+
+        // Если есть инструкции парсинга, например:
+        // Parsing: Count.fromString(value), Count.serialize(value)
+        const parsingRegex = /Parsing:\s*(.*),\s*(.*)/;
+        const parsingMatch = commentBlock.match(parsingRegex);
+        if (parsingMatch) {
+          customParsing.fromJson = parsingMatch[1].trim();
+          customParsing.toJson = parsingMatch[2].trim();
+        }
+
+        fields.push({
+          type,
+          name,
+          snakeName: convertCase ? convertCase(name) : name,
+          nullable,
+          isEnum,
+          isClass,
+          customParsing,
+        });
       }
+    }
 
-      if (dartBuiltInTypes.has(cleanType)) {
-        return { isEnum: false, isClass: false, customParsing };
-      }
-
-      return { isEnum, isClass: !isEnum, customParsing };
-    };
-
-    const fieldMatches = [...classBody.matchAll(/(\w+\??)\s+(\w+);/g)];
-    if (!fieldMatches.length) {
+    if (!fields.length) {
       vscode.window.showErrorMessage(
         `No valid fields found in class ${className}.`
       );
       continue;
     }
 
-    let fields = fieldMatches.map(([_, type, name]) => {
-      const { isEnum, isClass, customParsing } = determineFieldType(
-        type,
-        name,
-        classBody
-      );
-
-      return {
-        type,
-        name,
-        snakeName: convertCase ? convertCase(name) : name,
-        nullable: type.endsWith("?"),
-        isEnum,
-        isClass,
-        customParsing,
-      };
-    });
-
     const generateFieldDeclarations = () =>
       fields.map(({ type, name }) => `final ${type} ${name};`).join("\n  ");
 
-    const generateConstructor = () => `
-  const ${dtoClassName}({
+    const generateConstructor = () =>
+      `const ${dtoClassName}({
     ${fields
       .map(
         ({ name, nullable }) => `${nullable ? "" : "required "}this.${name},`
       )
       .join("\n    ")}
-  });
-  `;
+  });`;
 
-    const generateFactoryMethods = () => `
-  factory ${dtoClassName}.fromMap(Map<String, dynamic> map) => ${dtoClassName}(
+    const generateFactoryMethods = () =>
+      `factory ${dtoClassName}.fromMap(Map<String, dynamic> map) => ${dtoClassName}(
     ${fields
       .map(({ type, name, snakeName, customParsing, isEnum, isClass }) => {
         if (customParsing.fromJson) {
@@ -155,7 +159,9 @@ export const dataClass = async () => {
           return `${name}: ${name}FromString(map['${snakeName}']),`;
         }
         if (isClass) {
-          return `${name}: map['${snakeName}'] != null ? ${type}.fromMap(map['${snakeName}']) : null,`;
+          // Убираем nullable знак у типа для вызова fromMap
+          const nonNullableType = type.replace("?", "");
+          return `${name}: map['${snakeName}'] != null ? ${nonNullableType}.fromMap(map['${snakeName}']) : null,`;
         }
         return `${name}: map['${snakeName}'],`;
       })
@@ -163,11 +169,10 @@ export const dataClass = async () => {
   );
 
   factory ${dtoClassName}.fromJson(String source) =>
-      ${dtoClassName}.fromMap(json.decode(source));
-  `;
+      ${dtoClassName}.fromMap(json.decode(source));`;
 
-    const generateToMapAndJson = () => `
-  Map<String, dynamic> toMap() => {
+    const generateToMapAndJson = () =>
+      `Map<String, dynamic> toMap() => {
     ${fields
       .map(({ name, snakeName, customParsing, isEnum, isClass }) => {
         if (customParsing.toJson) {
@@ -187,25 +192,25 @@ export const dataClass = async () => {
       .join("\n    ")}
   };
 
-  String toJson() => json.encode(toMap());
-  `;
+  String toJson() => json.encode(toMap());`;
 
-    const generateToString = () => `
-  @override
+    const generateToString = () =>
+      `@override
   String toString() => '${dtoClassName}(${fields
-      .map(({ name }) => `${name}: \$${name}`)
-      .join(", ")})';
-  `;
+        .map(({ name }) => `${name}: \$${name}`)
+        .join(", ")})';`;
 
-    const updatedClass = `
-class ${dtoClassName} {
+    const updatedClass = `class ${dtoClassName} {
   ${generateFieldDeclarations()}
+  
   ${generateConstructor()}
+  
   ${generateFactoryMethods()}
+  
   ${generateToMapAndJson()}
+  
   ${generateToString()}
-}
-`;
+}`;
 
     const start = editor.document.positionAt(classMatch.index);
     const end = editor.document.positionAt(
