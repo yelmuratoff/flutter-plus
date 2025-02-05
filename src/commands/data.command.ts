@@ -44,91 +44,94 @@ export const dataClass = async () => {
     original: (str: any) => str,
   }[namingStyle];
 
-  const classNameMatch = classCode.match(/class\s+(\w+)/);
-  if (!classNameMatch) {
-    return vscode.window.showErrorMessage("No valid Dart class found.");
-  }
+  const classRegex = /class\s+(\w+)\s*{([\s\S]*?)}/g;
+  let classMatch;
+  let updatedClassCode = classCode;
+  let edits: { range: vscode.Range; newText: string }[] = [];
 
-  const className = classNameMatch[1];
-  const dtoClassName = `${className}${suffix}`;
+  while ((classMatch = classRegex.exec(classCode)) !== null) {
+    const className = classMatch[1];
+    const classBody = classMatch[2];
+    const dtoClassName = `${className}${suffix}`;
 
-  const dartBuiltInTypes = new Set([
-    "int",
-    "double",
-    "String",
-    "bool",
-    "num",
-    "List",
-    "Map",
-    "Set",
-    "dynamic",
-  ]);
+    const dartBuiltInTypes = new Set([
+      "int",
+      "double",
+      "String",
+      "bool",
+      "num",
+      "List",
+      "Map",
+      "Set",
+      "dynamic",
+    ]);
 
-  // Function to determine field type based on comments or class content
-  const determineFieldType = (
-    type: string,
-    name: string,
-    classCode: string
-  ) => {
-    const cleanType = type.replace("?", "");
-    let isEnum = false;
-    let customParsing: { fromJson?: string; toJson?: string } = {};
+    const determineFieldType = (
+      type: string,
+      name: string,
+      classBody: string
+    ) => {
+      const cleanType = type.replace("?", "");
+      let isEnum = false;
+      let customParsing: { fromJson?: string; toJson?: string } = {};
 
-    // Check for comments (Enum and Custom Serialization)
-    const commentRegex = new RegExp(`${name};\\s*//\\s*(.+)`, "g");
-    const commentMatch = commentRegex.exec(classCode);
+      const commentRegex = new RegExp(`${name};\\s*//\\s*(.+)`, "g");
+      const commentMatch = commentRegex.exec(classBody);
 
-    if (commentMatch) {
-      const commentLines = commentMatch[1]
-        .split("\n")
-        .map((line) => line.trim());
-      for (const line of commentLines) {
-        if (line.startsWith("Type: enum")) {
-          isEnum = true;
-        } else if (line.startsWith("Parsing:")) {
-          const match = line.match(/Parsing:\s*(.*),\s*(.*)/);
-          if (match) {
-            customParsing.fromJson = match[1].trim();
-            customParsing.toJson = match[2].trim();
+      if (commentMatch) {
+        const commentLines = commentMatch[1]
+          .split("\n")
+          .map((line) => line.trim());
+        for (const line of commentLines) {
+          if (line.startsWith("Type: enum")) {
+            isEnum = true;
+          } else if (line.startsWith("Parsing:")) {
+            const match = line.match(/Parsing:\s*(.*),\s*(.*)/);
+            if (match) {
+              customParsing.fromJson = match[1].trim();
+              customParsing.toJson = match[2].trim();
+            }
           }
         }
       }
-    }
 
-    if (dartBuiltInTypes.has(cleanType)) {
-      return { isEnum: false, isClass: false, customParsing };
-    }
+      if (dartBuiltInTypes.has(cleanType)) {
+        return { isEnum: false, isClass: false, customParsing };
+      }
 
-    return { isEnum, isClass: !isEnum, customParsing };
-  };
-
-  const fieldMatches = [...classCode.matchAll(/(\w+\??)\s+(\w+);/g)];
-  if (!fieldMatches.length) {
-    return vscode.window.showErrorMessage("No valid fields found in class.");
-  }
-
-  let fields = fieldMatches.map(([_, type, name]) => {
-    const { isEnum, isClass, customParsing } = determineFieldType(
-      type,
-      name,
-      classCode
-    );
-
-    return {
-      type,
-      name,
-      snakeName: convertCase ? convertCase(name) : name,
-      nullable: type.endsWith("?"),
-      isEnum,
-      isClass,
-      customParsing,
+      return { isEnum, isClass: !isEnum, customParsing };
     };
-  });
 
-  const generateFieldDeclarations = () =>
-    fields.map(({ type, name }) => `final ${type} ${name};`).join("\n  ");
+    const fieldMatches = [...classBody.matchAll(/(\w+\??)\s+(\w+);/g)];
+    if (!fieldMatches.length) {
+      vscode.window.showErrorMessage(
+        `No valid fields found in class ${className}.`
+      );
+      continue;
+    }
 
-  const generateConstructor = () => `
+    let fields = fieldMatches.map(([_, type, name]) => {
+      const { isEnum, isClass, customParsing } = determineFieldType(
+        type,
+        name,
+        classBody
+      );
+
+      return {
+        type,
+        name,
+        snakeName: convertCase ? convertCase(name) : name,
+        nullable: type.endsWith("?"),
+        isEnum,
+        isClass,
+        customParsing,
+      };
+    });
+
+    const generateFieldDeclarations = () =>
+      fields.map(({ type, name }) => `final ${type} ${name};`).join("\n  ");
+
+    const generateConstructor = () => `
   const ${dtoClassName}({
     ${fields
       .map(
@@ -138,8 +141,8 @@ export const dataClass = async () => {
   });
   `;
 
-  const generateFactoryMethods =
-    () => `factory ${dtoClassName}.fromMap(Map<String, dynamic> map) => ${dtoClassName}(
+    const generateFactoryMethods = () => `
+  factory ${dtoClassName}.fromMap(Map<String, dynamic> map) => ${dtoClassName}(
     ${fields
       .map(({ type, name, snakeName, customParsing, isEnum, isClass }) => {
         if (customParsing.fromJson) {
@@ -157,13 +160,14 @@ export const dataClass = async () => {
         return `${name}: map['${snakeName}'],`;
       })
       .join("\n    ")}
-      );
+  );
 
   factory ${dtoClassName}.fromJson(String source) =>
       ${dtoClassName}.fromMap(json.decode(source));
   `;
 
-  const generateToMapAndJson = () => `Map<String, dynamic> toMap() => {
+    const generateToMapAndJson = () => `
+  Map<String, dynamic> toMap() => {
     ${fields
       .map(({ name, snakeName, customParsing, isEnum, isClass }) => {
         if (customParsing.toJson) {
@@ -175,7 +179,6 @@ export const dataClass = async () => {
         if (isEnum) {
           return `'${snakeName}': ${name}ToString(${name}),`;
         }
-
         if (isClass) {
           return `'${snakeName}': ${name}?.toMap(),`;
         }
@@ -184,19 +187,17 @@ export const dataClass = async () => {
       .join("\n    ")}
   };
 
-  String toJson() => json.encode(toMap());`;
+  String toJson() => json.encode(toMap());
+  `;
 
-  const generateToString = () => `
+    const generateToString = () => `
   @override
   String toString() => '${dtoClassName}(${fields
-    .map(({ name }) => `${name}: \$${name}`)
-    .join(", ")})';`;
+      .map(({ name }) => `${name}: \$${name}`)
+      .join(", ")})';
+  `;
 
-  const classTemplate = `
-import 'dart:convert';
-import 'package:meta/meta.dart';
-
-@immutable
+    const updatedClass = `
 class ${dtoClassName} {
   ${generateFieldDeclarations()}
   ${generateConstructor()}
@@ -204,16 +205,25 @@ class ${dtoClassName} {
   ${generateToMapAndJson()}
   ${generateToString()}
 }
-
 `;
 
-  await editor.edit((editBuilder) => {
-    editBuilder.replace(
-      new vscode.Range(
-        editor.document.positionAt(0),
-        editor.document.positionAt(editor.document.getText().length)
-      ),
-      classTemplate.trim()
+    const start = editor.document.positionAt(classMatch.index);
+    const end = editor.document.positionAt(
+      classMatch.index + classMatch[0].length
     );
+    edits.push({
+      range: new vscode.Range(start, end),
+      newText: updatedClass.trim(),
+    });
+  }
+
+  if (edits.length === 0) {
+    return vscode.window.showErrorMessage("No Dart class found to update.");
+  }
+
+  await editor.edit((editBuilder) => {
+    for (const edit of edits) {
+      editBuilder.replace(edit.range, edit.newText);
+    }
   });
 };
